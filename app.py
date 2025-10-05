@@ -13,8 +13,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
 from textblob import TextBlob
 import nltk
 nltk.download('punkt')
@@ -46,7 +44,11 @@ col1, col2 = st.columns(2)
 with col1:
     st.subheader("Target Column Distribution")
     target_col = st.selectbox("Select Target Column", df.columns, index=0)
-    fig = px.histogram(df, x=target_col, color=target_col, title=f"Distribution of {target_col}")
+    
+    # توزيع الالوان لكل target بشكل تلقائي
+    color_map = px.colors.qualitative.Plotly  # مجموعة ألوان جاهزة
+    fig = px.histogram(df, x=target_col, color=target_col, title=f"Distribution of {target_col}",
+                       color_discrete_sequence=color_map)
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
@@ -59,23 +61,30 @@ with col2:
     plt.yticks(rotation=0)
     st.pyplot(fig, use_container_width=True)
 
+# ===== Label Encoding =====
 df = df.dropna()
 label_cols = df.select_dtypes(include=['object']).columns
 encoder = LabelEncoder()
 for col in label_cols:
     df[col] = encoder.fit_transform(df[col])
 
+# ===== Prepare Data =====
 target = target_col
 X = df.drop(columns=[target])
 y = df[target]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# ===== Models =====
 st.header("Model Training and Evaluation")
-
 models = {
-    "Random Forest": RandomForestClassifier(n_estimators=50, random_state=42),  # أخف
+    "Random Forest": RandomForestClassifier(n_estimators=50, random_state=42),
     "Gradient Boosting": GradientBoostingClassifier(random_state=42),
-    "Logistic Regression": LogisticRegression(max_iter=500)
+    "AdaBoost": AdaBoostClassifier(random_state=42),
+    "Logistic Regression": LogisticRegression(max_iter=500),
+    "SVM": SVC(kernel="rbf", probability=True),
+    "KNN": KNeighborsClassifier(),
+    "Naive Bayes": GaussianNB(),
+    "Decision Tree": DecisionTreeClassifier(random_state=42)
 }
 
 selected_models = st.multiselect(
@@ -106,6 +115,7 @@ if st.checkbox("Show Confusion Matrix for Best Model"):
         sns.heatmap(cm, annot=True, fmt="d", cmap="Purples", ax=ax)
         st.pyplot(fig)
 
+# ===== Sentiment Analysis =====
 st.header("Sentiment Analysis")
 text_input = st.text_area("Enter text to analyze sentiment:")
 if st.button("Analyze Sentiment"):
@@ -122,3 +132,4 @@ if st.button("Analyze Sentiment"):
 
 st.markdown("---")
 st.markdown("Lite Version for Free Users")
+
