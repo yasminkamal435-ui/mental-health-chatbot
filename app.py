@@ -35,13 +35,6 @@ st.sidebar.title("Dashboard Control")
 if st.sidebar.checkbox("Show first 5 rows"):
     st.dataframe(df.head(5))
 st.sidebar.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
-st.sidebar.subheader("Filter Dataset")
-filter_col = st.sidebar.selectbox("Filter Column", options=df.columns)
-if filter_col in df.columns:
-    filter_vals = st.sidebar.multiselect(f"Select values for {filter_col}", options=df[filter_col].unique(), default=df[filter_col].unique())
-    df_filtered = df[df[filter_col].isin(filter_vals)]
-else:
-    df_filtered = df.copy()
 col1, col2 = st.columns(2)
 color_palettes = {
     "Social_Media_Usage": ["#a8dadc","#f1faee","#d3d3d3"],
@@ -52,32 +45,27 @@ color_palettes = {
 }
 with col1:
     st.subheader("Target Column Distribution")
-    target_col = st.selectbox("Select Target Column", df_filtered.columns)
+    target_col = st.selectbox("Select Target Column", df.columns)
     colors = color_palettes.get(target_col, px.colors.qualitative.Plotly)
-    fig = px.histogram(df_filtered, x=target_col, color=target_col, color_discrete_sequence=colors, title=f"Distribution of {target_col}")
+    fig = px.histogram(df, x=target_col, color=target_col, color_discrete_sequence=colors, title=f"Distribution of {target_col}")
     st.plotly_chart(fig, use_container_width=True)
-    st.subheader(f"Summary Statistics for {target_col}")
-    st.write(df_filtered[target_col].describe())
-    st.subheader(f"Box Plot for {target_col}")
-    fig_box = px.box(df_filtered, y=target_col, color=target_col, color_discrete_sequence=colors)
-    st.plotly_chart(fig_box, use_container_width=True)
 with col2:
     st.subheader("Correlation Heatmap")
-    numeric_df = df_filtered.select_dtypes(include=['float64', 'int64'])
+    numeric_df = df.select_dtypes(include=['float64', 'int64'])
     corr = numeric_df.corr()
     fig, ax = plt.subplots(figsize=(10,7))
     sns.heatmap(corr, cmap="Purples", annot=True, fmt=".2f", square=False, linewidths=0.5, cbar_kws={"shrink":0.8})
     plt.xticks(rotation=45, ha="right")
     plt.yticks(rotation=0)
     st.pyplot(fig, use_container_width=True)
-df_filtered = df_filtered.dropna()
-label_cols = df_filtered.select_dtypes(include=['object']).columns
+df = df.dropna()
+label_cols = df.select_dtypes(include=['object']).columns
 encoder = LabelEncoder()
 for col in label_cols:
-    df_filtered[col] = encoder.fit_transform(df_filtered[col])
+    df[col] = encoder.fit_transform(df[col])
 target = target_col
-X = df_filtered.drop(columns=[target])
-y = df_filtered[target]
+X = df.drop(columns=[target])
+y = df[target]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 st.header("Model Training and Evaluation")
 models = {
@@ -111,17 +99,19 @@ if st.checkbox("Show Confusion Matrix for Best Model"):
     fig, ax = plt.subplots()
     sns.heatmap(cm, annot=True, fmt="d", cmap="Purples", ax=ax)
     st.pyplot(fig, use_container_width=True)
-st.subheader("Numeric Columns Distribution")
-numeric_cols = df_filtered.select_dtypes(include=['int64','float64']).columns
-selected_num_col = st.selectbox("Select Numeric Column for Distribution", numeric_cols)
-fig_hist = px.histogram(df_filtered, x=selected_num_col, nbins=20, title=f"Distribution of {selected_num_col}")
-st.plotly_chart(fig_hist, use_container_width=True)
-st.subheader("Scatter Plot of Two Numeric Features")
-num_cols = df_filtered.select_dtypes(include=['float64','int64']).columns.tolist()
-x_col = st.selectbox("X-axis", num_cols, index=0)
-y_col = st.selectbox("Y-axis", num_cols, index=1)
-fig_scatter = px.scatter(df_filtered, x=x_col, y=y_col, color=target_col, color_discrete_sequence=colors, title=f"{y_col} vs {x_col}")
-st.plotly_chart(fig_scatter, use_container_width=True)
+st.header("Sentiment Analysis")
+text_input = st.text_area("Enter text to analyze sentiment:")
+if st.button("Analyze Sentiment"):
+    if text_input.strip():
+        sentiment = TextBlob(text_input).sentiment.polarity
+        if sentiment > 0:
+            st.success(f"Positive Sentiment ({sentiment:.2f})")
+        elif sentiment < 0:
+            st.error(f"Negative Sentiment ({sentiment:.2f})")
+        else:
+            st.warning("Neutral Sentiment (0.00)")
+    else:
+        st.warning("Please enter valid text.")
 st.header("Interactive Mini Quiz")
 quiz_score = 0
 q1 = st.radio("How often do you exercise per week?", ["0 times","1-2 times","3-5 times","Everyday"])
@@ -141,19 +131,6 @@ if st.button("Submit Quiz"):
         st.warning("Good! Try to improve a bit more.")
     else:
         st.error("Consider improving your lifestyle habits.")
-st.header("Sentiment Analysis")
-text_input = st.text_area("Enter text to analyze sentiment:")
-if st.button("Analyze Sentiment"):
-    if text_input.strip():
-        sentiment = TextBlob(text_input).sentiment.polarity
-        if sentiment > 0:
-            st.success(f"Positive Sentiment ({sentiment:.2f})")
-        elif sentiment < 0:
-            st.error(f"Negative Sentiment ({sentiment:.2f})")
-        else:
-            st.warning("Neutral Sentiment (0.00)")
-    else:
-        st.warning("Please enter valid text.")
 st.header("Daily Wellness Tip")
 tips = [
     "Drink at least 8 glasses of water today.",
@@ -166,6 +143,20 @@ tips = [
     "Write down 3 things you are grateful for today."
 ]
 st.info(random.choice(tips))
+st.header("Lifestyle Habits Tracker")
+exercise = st.checkbox("Did you exercise today?")
+sleep = st.checkbox("Did you sleep at least 7 hours?")
+water = st.checkbox("Did you drink 8 glasses of water?")
+fruits = st.checkbox("Did you eat enough fruits/vegetables?")
+habits_score = sum([exercise,sleep,water,fruits])
+if st.button("Submit Daily Habits"):
+    st.info(f"Your Daily Habits Score: {habits_score}/4")
+    if habits_score == 4:
+        st.success("Excellent! Full healthy habits achieved today.")
+    elif habits_score >= 2:
+        st.warning("Good! Try to improve the remaining habits.")
+    else:
+        st.error("Consider improving your daily lifestyle habits.")
 st.markdown("---")
 st.markdown("Lite Version for Free Users")
 
