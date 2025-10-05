@@ -23,7 +23,6 @@ nltk.download('stopwords')
 st.set_page_config(page_title="AI Mental Health Dashboard", layout="wide")
 st.title("AI Mental Health and Lifestyle Dashboard")
 
-# تحميل البيانات
 @st.cache_data
 def load_data():
     try:
