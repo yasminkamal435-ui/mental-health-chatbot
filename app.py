@@ -90,11 +90,11 @@ for col in label_cols:
 target = target_col
 X = df.drop(columns=[target])
 y = df[target]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 st.header("Model Training and Evaluation")
 models = {
-    "Random Forest": RandomForestClassifier(n_estimators=50, random_state=42),
+    "Random Forest": RandomForestClassifier(n_estimators=200, random_state=42),
     "Gradient Boosting": GradientBoostingClassifier(random_state=42),
     "AdaBoost": AdaBoostClassifier(random_state=42),
     "Logistic Regression": LogisticRegression(max_iter=500),
@@ -226,8 +226,6 @@ elif st.session_state.points >= 10:
 
 st.markdown("---")
 st.markdown("Lite Version for Free Users")
-
-
 
 
 
