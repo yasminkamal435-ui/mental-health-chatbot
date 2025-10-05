@@ -11,3 +11,5 @@ tensorflow
 textblob
 joblib
 reportlab
+umap-learn
+
