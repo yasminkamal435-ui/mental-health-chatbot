@@ -23,6 +23,7 @@ nltk.download('stopwords')
 st.set_page_config(page_title="AI Mental Health Dashboard", layout="wide")
 st.title("AI Mental Health and Lifestyle Dashboard")
 
+# تحميل البيانات
 @st.cache_data
 def load_data():
     try:
@@ -34,30 +35,25 @@ def load_data():
 
 df = load_data()
 if df.empty:
+    st.error("Dataset is empty.")
     st.stop()
 
-# Sidebar
-st.sidebar.title("Dashboard Control")
-if st.sidebar.checkbox("Show first 10 rows"):
-    st.dataframe(df.head(10))
-st.sidebar.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
+st.subheader("Dataset Overview")
+st.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
+st.dataframe(df.head(10))
 
-# توزيع كل الأعمدة الرقمية تلقائيًا
 st.subheader("Distribution of Numeric Columns")
 numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
 if len(numeric_cols) == 0:
-    st.warning("No numeric columns available to display.")
+    st.warning("No numeric columns to display.")
 else:
     for col in numeric_cols:
         fig = px.histogram(df, x=col, title=f"Distribution of {col}")
         st.plotly_chart(fig, use_container_width=True)
 
-# Heatmap لجميع الأعمدة الرقمية
 st.subheader("Correlation Heatmap")
 numeric_df = df.select_dtypes(include=['float64', 'int64']).dropna()
-if numeric_df.shape[1] == 0:
-    st.warning("No numeric columns available for correlation heatmap.")
-else:
+if numeric_df.shape[1] > 0:
     corr = numeric_df.corr()
     fig, ax = plt.subplots(figsize=(7,5))
     sns.set_theme(style="white")
@@ -68,22 +64,25 @@ else:
     plt.xticks(rotation=45, ha="right", fontsize=9)
     plt.yticks(fontsize=9)
     st.pyplot(fig, use_container_width=True)
+else:
+    st.warning("No numeric columns for correlation heatmap.")
 
-# ترميز الأعمدة النصية
 df = df.dropna()
 label_cols = df.select_dtypes(include=['object']).columns
 encoder = LabelEncoder()
 for col in label_cols:
     df[col] = encoder.fit_transform(df[col])
 
-# اختيار أول عمود رقمي كـ target تلقائيًا
-target_col = numeric_cols[0] if len(numeric_cols) > 0 else df.columns[0]
+if len(numeric_cols) > 0:
+    target_col = numeric_cols[0]
+else:
+    target_col = df.columns[0]
+
 target = target_col
 X = df.drop(columns=[target])
 y = df[target]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# تدريب النماذج
 st.header("Model Training and Evaluation")
 models = {
     "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
@@ -110,7 +109,6 @@ st.plotly_chart(fig, use_container_width=True)
 best_model_name = max(results, key=results.get)
 st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
 
-# Confusion Matrix
 st.subheader("Confusion Matrix for Best Model")
 best_model = models[best_model_name]
 preds = best_model.predict(X_test)
@@ -119,8 +117,7 @@ fig, ax = plt.subplots()
 sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
 st.pyplot(fig)
 
-# Neural Network
-st.subheader("Neural Network Training (Optional)")
+st.header("Neural Network Training")
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
@@ -150,11 +147,9 @@ ax[1].legend()
 ax[1].set_title("Loss Over Epochs")
 st.pyplot(fig)
 
-# KMeans + PCA
-st.header("KMeans + PCA Clustering (Optional)")
-num_clusters = 3
+st.header("KMeans + PCA Clustering")
 scaled = StandardScaler().fit_transform(X)
-kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+kmeans = KMeans(n_clusters=3, random_state=42)
 labels = kmeans.fit_predict(scaled)
 df['Cluster'] = labels
 pca = PCA(2)
@@ -165,7 +160,6 @@ fig = px.scatter(pca_df, x="PC1", y="PC2", color=pca_df["Cluster"].astype(str),
                  title="KMeans Clustering with PCA")
 st.plotly_chart(fig, use_container_width=True)
 
-# Sentiment Analysis
 st.header("Sentiment Analysis")
 text_input = st.text_area("Enter text to analyze sentiment:")
 if text_input.strip():
@@ -179,10 +173,6 @@ if text_input.strip():
 
 st.markdown("---")
 st.markdown("Developed for AI Mental Health Research Dashboard")
-
-
-
-
 
 
 
