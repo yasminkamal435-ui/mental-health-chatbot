@@ -27,6 +27,7 @@ st.title("AI Mental Health and Lifestyle Dashboard")
 def load_data():
     try:
         df = pd.read_csv("mental_health_lifestyle.csv")
+        df = df.sample(n=min(500, len(df)), random_state=42)  # تصغير البيانات لأقصى 500 صف
         return df
     except:
         st.error("CSV file not found. Make sure 'mental_health_lifestyle.csv' is in your project folder.")
@@ -53,14 +54,15 @@ with col2:
     st.subheader("Correlation Heatmap")
     numeric_df = df.select_dtypes(include=['float64', 'int64'])
     corr = numeric_df.corr()
-    fig, ax = plt.subplots(figsize=(7,5))
+    fig, ax = plt.subplots(figsize=(6,4))
     sns.set_theme(style="white")
     mask = np.triu(np.ones_like(corr, dtype=bool))
-    cmap = sns.diverging_palette(230, 20, as_cmap=True)
+    # ألوان أسود - رمادي - موف
+    cmap = sns.diverging_palette(260, 300, s=60, l=30, as_cmap=True)
     sns.heatmap(corr, mask=mask, cmap=cmap, center=0, square=True, linewidths=0.5,
                 annot=True, fmt=".2f", cbar_kws={"shrink":0.8, "label":"Correlation"})
-    plt.xticks(rotation=45, ha="right", fontsize=9)
-    plt.yticks(fontsize=9)
+    plt.xticks(rotation=45, ha="right", fontsize=8)
+    plt.yticks(fontsize=8)
     st.pyplot(fig, use_container_width=True)
 
 df = df.dropna()
@@ -77,11 +79,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 st.header("Model Training and Evaluation")
 
 models = {
-    "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
+    "Random Forest": RandomForestClassifier(n_estimators=50, random_state=42),  # تقليل عدد الأشجار
     "Gradient Boosting": GradientBoostingClassifier(random_state=42),
     "AdaBoost": AdaBoostClassifier(random_state=42),
     "SVM": SVC(kernel="rbf", probability=True),
-    "Logistic Regression": LogisticRegression(max_iter=1000),
+    "Logistic Regression": LogisticRegression(max_iter=500),
     "KNN": KNeighborsClassifier(),
     "Naive Bayes": GaussianNB(),
     "Decision Tree": DecisionTreeClassifier(random_state=42)
@@ -112,8 +114,10 @@ if st.checkbox("Show Confusion Matrix for Best Model"):
         best_model = models[best_model_name]
         preds = best_model.predict(X_test)
         cm = confusion_matrix(y_test, preds)
-        fig, ax = plt.subplots()
-        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+        fig, ax = plt.subplots(figsize=(4,3))  # تصغير حجم الماتريكس
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax, cbar=False)
+        plt.xticks(fontsize=8)
+        plt.yticks(fontsize=8)
         st.pyplot(fig)
 
 st.subheader("Optional Neural Network Training")
@@ -124,14 +128,14 @@ if st.checkbox("Train Neural Network"):
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Dropout
     nn_model = Sequential([
-        Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+        Dense(32, activation='relu', input_shape=(X_train.shape[1],)),  # تقليل عدد النيرونات
         Dropout(0.3),
-        Dense(32, activation='relu'),
+        Dense(16, activation='relu'),
         Dropout(0.2),
         Dense(1, activation='sigmoid')
     ])
     nn_model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    history = nn_model.fit(X_train_scaled, y_train, epochs=5, batch_size=64, validation_split=0.2, verbose=0)
+    history = nn_model.fit(X_train_scaled, y_train, epochs=3, batch_size=32, validation_split=0.2, verbose=0)
     test_loss, test_acc = nn_model.evaluate(X_test_scaled, y_test, verbose=0)
     st.success(f"Neural Network Test Accuracy: {test_acc:.2f}")
     fig, ax = plt.subplots(1,2, figsize=(10,4))
@@ -176,5 +180,6 @@ if st.button("Analyze Sentiment"):
 
 st.markdown("---")
 st.markdown("Developed for AI Mental Health Research Dashboard")
+
 
 
