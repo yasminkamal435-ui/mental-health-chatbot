@@ -8,18 +8,17 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from textblob import TextBlob
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
-from textblob import TextBlob
 import nltk
 nltk.download('punkt')
 nltk.download('stopwords')
 
 st.set_page_config(page_title="AI Mental Health Dashboard", layout="wide")
-st.title("AI Mental Health and Lifestyle Dashboard - Free Version")
+st.title("AI Mental Health Dashboard - Automatic Version")
 
 # -----------------------------
 # Load Data
@@ -28,7 +27,7 @@ st.title("AI Mental Health and Lifestyle Dashboard - Free Version")
 def load_data():
     try:
         df = pd.read_csv("mental_health_lifestyle.csv")
-        # reduce sample size for Streamlit free version
+        # لتجنب مشاكل RAM، ناخد عينة لو كبيرة
         if df.shape[0] > 5000:
             df = df.sample(5000, random_state=42).reset_index(drop=True)
         return df
@@ -41,33 +40,17 @@ if df.empty:
     st.stop()
 
 # -----------------------------
-# Display Overview
+# Preprocessing
 # -----------------------------
-st.subheader("Dataset Overview")
-st.write(f"Rows: {df.shape[0]}, Columns: {df.shape[1]}")
-st.dataframe(df.head(10))
-
-# -----------------------------
-# Automatic Analysis for Numeric Columns
-# -----------------------------
-numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
-st.subheader("Numeric Columns Analysis")
-for col in numeric_cols:
-    fig = px.histogram(df, x=col, nbins=20, title=f"Distribution of {col}", color_discrete_sequence=['#636EFA'])
-    st.plotly_chart(fig, use_container_width=True)
-
-# -----------------------------
-# Label Encoding for Categorical
-# -----------------------------
+df = df.dropna()
 label_cols = df.select_dtypes(include=['object']).columns
 encoder = LabelEncoder()
 for col in label_cols:
     df[col] = encoder.fit_transform(df[col])
 
-# -----------------------------
-# Define Target & Features
-# -----------------------------
+numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
 target_col = numeric_cols[0] if len(numeric_cols) > 0 else df.columns[0]
+
 X = df.drop(columns=[target_col])
 y = df[target_col]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -75,10 +58,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # -----------------------------
 # Model Training
 # -----------------------------
-st.subheader("Model Training")
+st.header("Model Training and Evaluation")
 models = {
-    "Random Forest": RandomForestClassifier(n_estimators=50, random_state=42),
-    "Logistic Regression": LogisticRegression(max_iter=500)
+    "Random Forest": RandomForestClassifier(n_estimators=50, random_state=42)
 }
 
 results = {}
@@ -88,16 +70,13 @@ for name, model in models.items():
     results[name] = accuracy_score(y_test, preds)
 
 result_df = pd.DataFrame(list(results.items()), columns=["Model", "Accuracy"]).sort_values(by="Accuracy", ascending=False)
-fig = px.bar(result_df, x="Model", y="Accuracy", text_auto=".2f", color="Accuracy", title="Model Accuracy")
+fig = px.bar(result_df, x="Model", y="Accuracy", color="Accuracy", text_auto=".2f")
 st.plotly_chart(fig, use_container_width=True)
 
 best_model_name = max(results, key=results.get)
 st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
 
-# -----------------------------
 # Confusion Matrix
-# -----------------------------
-st.subheader("Confusion Matrix")
 best_model = models[best_model_name]
 preds = best_model.predict(X_test)
 cm = confusion_matrix(y_test, preds)
@@ -108,10 +87,10 @@ st.pyplot(fig)
 # -----------------------------
 # Neural Network
 # -----------------------------
-st.subheader("Neural Network (Light)")
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
+
 nn_model = Sequential([
     Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
     Dropout(0.3),
@@ -138,11 +117,11 @@ st.pyplot(fig)
 # -----------------------------
 # KMeans + PCA
 # -----------------------------
-st.subheader("KMeans + PCA Clustering")
 num_clusters = 3
 scaled = StandardScaler().fit_transform(X)
 kmeans = KMeans(n_clusters=num_clusters, random_state=42)
 labels = kmeans.fit_predict(scaled)
+df['Cluster'] = labels
 pca = PCA(2)
 components = pca.fit_transform(scaled)
 pca_df = pd.DataFrame(data=components, columns=["PC1","PC2"])
@@ -152,16 +131,19 @@ fig = px.scatter(pca_df, x="PC1", y="PC2", color=pca_df["Cluster"].astype(str),
 st.plotly_chart(fig, use_container_width=True)
 
 # -----------------------------
-# Sentiment Analysis for Text Columns
+# Sentiment Analysis
 # -----------------------------
-st.subheader("Sentiment Analysis for Text Columns")
-text_cols = df.select_dtypes(include=['int64','float64']).columns.difference([target_col])
-for col in text_cols:
-    st.write(f"Column: {col}")
-    if df[col].dtype == 'object':
-        sentiments = df[col].astype(str).apply(lambda x: TextBlob(x).sentiment.polarity)
-        fig = px.histogram(sentiments, nbins=20, title=f"Sentiment Distribution for {col}", color_discrete_sequence=['#EF553B'])
-        st.plotly_chart(fig, use_container_width=True)
+st.header("Sentiment Analysis")
+text_input = st.text_area("Enter text to analyze sentiment:")
+if text_input.strip():
+    sentiment = TextBlob(text_input).sentiment.polarity
+    if sentiment > 0:
+        st.success(f"Positive Sentiment ({sentiment:.2f})")
+    elif sentiment < 0:
+        st.error(f"Negative Sentiment ({sentiment:.2f})")
+    else:
+        st.warning("Neutral Sentiment (0.00)")
 
 st.markdown("---")
-st.markdown("Developed for AI Mental Health Research Dashboard - Free Version")
+st.markdown("Developed for AI Mental Health Research Dashboard")
+
