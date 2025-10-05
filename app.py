@@ -24,6 +24,7 @@ st.title("Lite AI Mental Health and Lifestyle Dashboard")
 @st.cache_data
 def load_data():
     try:
+        # تحميل نسخة أخف من الداتا، مثلا 1000 صف فقط
         df = pd.read_csv("mental_health_lifestyle.csv").sample(n=1000, random_state=42)
         return df
     except:
@@ -41,14 +42,22 @@ st.sidebar.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
 
 col1, col2 = st.columns(2)
 
+# ===== تعريف ألوان مختلفة لكل عمود target =====
+color_palettes = {
+    "Social_Media_Usage": ["#a8dadc","#f1faee","#d3d3d3"],       # لبني فاتح + أبيض + رمادي فاتح
+    "Diet_Quality": ["#457b9d","#adb5bd","#6c757d"],             # لبني غامق + رمادي متوسط + رمادي غامق
+    "Smoking_Habit": ["#1d3557","#a8dadc","#ced4da"],            # أزرق غامق + لبني + رمادي فاتح
+    "Alcohol_Consumption": ["#6c757d","#f1faee","#495057"],      # رمادي متوسط + أبيض + رمادي داكن
+    "Medication_Usage": ["#a8dadc","#457b9d","#adb5bd"]          # تدرجات لبني + رمادي
+}
+
 with col1:
     st.subheader("Target Column Distribution")
-    target_col = st.selectbox("Select Target Column", df.columns, index=0)
-    
-    # توزيع الالوان لكل target بشكل تلقائي
-    color_map = px.colors.qualitative.Plotly  # مجموعة ألوان جاهزة
-    fig = px.histogram(df, x=target_col, color=target_col, title=f"Distribution of {target_col}",
-                       color_discrete_sequence=color_map)
+    target_col = st.selectbox("Select Target Column", df.columns)
+    colors = color_palettes.get(target_col, px.colors.qualitative.Plotly)
+    fig = px.histogram(df, x=target_col, color=target_col,
+                       color_discrete_sequence=colors,
+                       title=f"Distribution of {target_col}")
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
@@ -132,4 +141,5 @@ if st.button("Analyze Sentiment"):
 
 st.markdown("---")
 st.markdown("Lite Version for Free Users")
+
 
