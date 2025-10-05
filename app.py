@@ -36,6 +36,11 @@ df = load_data()
 if df.empty:
     st.stop()
 
+if "points" not in st.session_state:
+    st.session_state.points = 0
+if "streak" not in st.session_state:
+    st.session_state.streak = 0
+
 st.sidebar.title("Dashboard Control")
 if st.sidebar.checkbox("Show first 5 rows"):
     st.dataframe(df.head(5))
@@ -67,6 +72,14 @@ with col2:
     plt.xticks(rotation=45, ha="right")
     plt.yticks(rotation=0)
     st.pyplot(fig, use_container_width=True)
+
+st.header("Column Insights (Numeric Data)")
+numeric_cols = df.select_dtypes(include=['float64','int64']).columns
+for col in numeric_cols:
+    mean_val = df[col].mean()
+    min_val = df[col].min()
+    max_val = df[col].max()
+    st.write(f"**{col}**: Mean = {mean_val:.2f}, Min = {min_val:.2f}, Max = {max_val:.2f}")
 
 df = df.dropna()
 label_cols = df.select_dtypes(include=['object']).columns
@@ -105,6 +118,8 @@ if st.button("Train Selected Models"):
     st.table(result_df)
     best_model_name = max(results, key=results.get)
     st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
+    st.session_state.points += 5
+    st.session_state.streak += 1
 
 if st.checkbox("Show Confusion Matrix for Best Model"):
     best_model = models[best_model_name]
@@ -125,6 +140,7 @@ if st.button("Analyze Sentiment"):
             st.error(f"Negative Sentiment ({sentiment:.2f})")
         else:
             st.warning("Neutral Sentiment (0.00)")
+        st.session_state.points += 1
     else:
         st.warning("Please enter valid text.")
 
@@ -152,6 +168,8 @@ if st.button("Submit Quiz"):
         st.warning("Good! Try to improve a bit more.")
     else:
         st.error("Consider improving your lifestyle habits.")
+    st.session_state.points += quiz_score
+    st.session_state.streak += 1
 
 st.header("Random Wellness Tip")
 tips = [
@@ -180,6 +198,8 @@ if st.button("Submit Daily Habits"):
         st.warning("Good! Try to improve the remaining habits.")
     else:
         st.error("Consider improving your daily lifestyle habits.")
+    st.session_state.points += habits_score
+    st.session_state.streak += 1
 
 st.header("Daily Challenge / Reminder")
 daily_challenges = [
@@ -191,12 +211,22 @@ daily_challenges = [
 challenge = random.choice(daily_challenges)
 if st.button("Mark Challenge Done"):
     st.success(f"You completed: {challenge}")
+    st.session_state.points += 2
+    st.session_state.streak += 1
 else:
     st.info(f"Today's Challenge: {challenge}")
 
-st.header("Simple Progress Indicator")
-progress = f"You have completed {habits_score} out of 4 daily habits."
-st.info(progress)
+st.header("Gamification Summary")
+st.write(f"Total Points: {st.session_state.points}")
+st.write(f"Current Streak: {st.session_state.streak}")
+if st.session_state.points >= 20:
+    st.success("Achievement Unlocked: Wellness Champion!")
+elif st.session_state.points >= 10:
+    st.info("Achievement Unlocked: Wellness Enthusiast!")
+
+st.markdown("---")
+st.markdown("Lite Version for Free Users")
+
 
 
 
