@@ -19,7 +19,9 @@ nltk.download('stopwords')
 st.set_page_config(page_title="AI Mental Health Dashboard", layout="wide")
 st.title("AI Mental Health Dashboard - Light Version")
 
-# Load Data (sample if large)
+# -----------------------------
+# Load Data
+# -----------------------------
 @st.cache_data
 def load_data():
     try:
@@ -35,11 +37,14 @@ df = load_data()
 if df.empty:
     st.stop()
 
-st.subheader("Dataset Overview")
-st.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
-st.dataframe(df.head(10))
+st.sidebar.title("Dashboard Control")
+if st.sidebar.checkbox("Show first 10 rows"):
+    st.dataframe(df.head(10))
+st.sidebar.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
 
+# -----------------------------
 # Preprocessing
+# -----------------------------
 df = df.dropna()
 label_cols = df.select_dtypes(include=['object']).columns
 encoder = LabelEncoder()
@@ -53,18 +58,27 @@ X = df.drop(columns=[target_col])
 y = df[target_col]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# -----------------------------
 # Correlation Heatmap
+# -----------------------------
 st.subheader("Correlation Heatmap")
 numeric_df = df.select_dtypes(include=['float64', 'int64'])
 if numeric_df.shape[1] > 0:
     corr = numeric_df.corr()
     fig, ax = plt.subplots(figsize=(7,5))
-    sns.heatmap(corr, cmap="coolwarm", annot=True, fmt=".2f", ax=ax)
-    plt.xticks(rotation=45, ha="right")
-    plt.yticks(rotation=0)
+    sns.heatmap(
+        corr, annot=True, fmt=".2f", cmap="Purples",  # موف اللون الأساسي
+        center=0, square=True, linewidths=0.5,
+        cbar_kws={"shrink":0.8, "label":"Correlation"}, ax=ax
+    )
+    ax.set_facecolor('black')  # الخلفية سوداء
+    plt.xticks(rotation=45, ha="right", fontsize=9, color='white')
+    plt.yticks(fontsize=9, color='white')
     st.pyplot(fig)
 
+# -----------------------------
 # Model Training
+# -----------------------------
 st.header("Model Training and Evaluation")
 models = {
     "Random Forest": RandomForestClassifier(n_estimators=50, random_state=42),
@@ -85,8 +99,9 @@ st.plotly_chart(fig, use_container_width=True)
 best_model_name = max(results, key=results.get)
 st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
 
+# -----------------------------
 # Confusion Matrix
-st.subheader("Confusion Matrix")
+# -----------------------------
 best_model = models[best_model_name]
 preds = best_model.predict(X_test)
 cm = confusion_matrix(y_test, preds)
@@ -94,21 +109,23 @@ fig, ax = plt.subplots()
 sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
 st.pyplot(fig)
 
+# -----------------------------
 # Neural Network
-st.header("Neural Network Training")
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
+# -----------------------------
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
 nn_model = Sequential([
-    Dense(32, activation='relu', input_shape=(X_train.shape[1],)),
+    Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+    Dropout(0.3),
+    Dense(32, activation='relu'),
     Dropout(0.2),
-    Dense(16, activation='relu'),
     Dense(1, activation='sigmoid')
 ])
 nn_model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-history = nn_model.fit(X_train_scaled, y_train, epochs=3, batch_size=32, validation_split=0.2, verbose=0)
+history = nn_model.fit(X_train_scaled, y_train, epochs=5, batch_size=64, validation_split=0.2, verbose=0)
 test_loss, test_acc = nn_model.evaluate(X_test_scaled, y_test, verbose=0)
 st.success(f"Neural Network Test Accuracy: {test_acc:.2f}")
 
@@ -123,11 +140,13 @@ ax[1].legend()
 ax[1].set_title("Loss Over Epochs")
 st.pyplot(fig)
 
+# -----------------------------
 # KMeans + PCA
-st.header("KMeans + PCA Clustering")
+# -----------------------------
 scaled = StandardScaler().fit_transform(X)
 kmeans = KMeans(n_clusters=3, random_state=42)
 labels = kmeans.fit_predict(scaled)
+df['Cluster'] = labels
 pca = PCA(2)
 components = pca.fit_transform(scaled)
 pca_df = pd.DataFrame(data=components, columns=["PC1","PC2"])
@@ -136,8 +155,9 @@ fig = px.scatter(pca_df, x="PC1", y="PC2", color=pca_df["Cluster"].astype(str),
                  title="KMeans Clustering with PCA")
 st.plotly_chart(fig, use_container_width=True)
 
+# -----------------------------
 # Sentiment Analysis
-st.header("Sentiment Analysis")
+# -----------------------------
 text_input = st.text_area("Enter text to analyze sentiment:")
 if text_input.strip():
     sentiment = TextBlob(text_input).sentiment.polarity
@@ -150,5 +170,6 @@ if text_input.strip():
 
 st.markdown("---")
 st.markdown("Developed for AI Mental Health Research Dashboard")
+
 
 
