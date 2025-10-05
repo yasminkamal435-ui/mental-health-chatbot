@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -198,6 +197,8 @@ else:
 st.header("Simple Progress Indicator")
 progress = f"You have completed {habits_score} out of 4 daily habits."
 st.info(progress)
+
+
 
 
 
