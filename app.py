@@ -40,6 +40,8 @@ if "points" not in st.session_state:
     st.session_state.points = 0
 if "streak" not in st.session_state:
     st.session_state.streak = 0
+if "best_model_name" not in st.session_state:
+    st.session_state.best_model_name = None
 
 st.sidebar.title("Dashboard Control")
 if st.sidebar.checkbox("Show first 5 rows"):
@@ -117,17 +119,19 @@ if st.button("Train Selected Models"):
     st.subheader("Model Accuracy Comparison")
     st.table(result_df)
     best_model_name = max(results, key=results.get)
+    st.session_state.best_model_name = best_model_name
     st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
     st.session_state.points += 5
     st.session_state.streak += 1
 
-if st.checkbox("Show Confusion Matrix for Best Model"):
-    best_model = models[best_model_name]
-    preds = best_model.predict(X_test)
-    cm = confusion_matrix(y_test, preds)
-    fig, ax = plt.subplots()
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Purples", ax=ax)
-    st.pyplot(fig, use_container_width=True)
+if st.session_state.best_model_name is not None:
+    if st.checkbox("Show Confusion Matrix for Best Model"):
+        best_model = models[st.session_state.best_model_name]
+        preds = best_model.predict(X_test)
+        cm = confusion_matrix(y_test, preds)
+        fig, ax = plt.subplots()
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Purples", ax=ax)
+        st.pyplot(fig, use_container_width=True)
 
 st.header("Sentiment Analysis")
 text_input = st.text_area("Enter text to analyze sentiment:")
@@ -226,10 +230,4 @@ elif st.session_state.points >= 10:
 
 st.markdown("---")
 st.markdown("Lite Version for Free Users")
-
-
-
-
-
-
 
