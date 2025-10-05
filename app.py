@@ -24,7 +24,6 @@ st.title("Lite AI Mental Health and Lifestyle Dashboard")
 @st.cache_data
 def load_data():
     try:
-        # تحميل نسخة أخف من الداتا، مثلا 1000 صف فقط
         df = pd.read_csv("mental_health_lifestyle.csv").sample(n=1000, random_state=42)
         return df
     except:
@@ -40,7 +39,6 @@ if st.sidebar.checkbox("Show first 5 rows"):
     st.dataframe(df.head(5))
 st.sidebar.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
 
-# ===== Filter تفاعلي للـ dataset =====
 st.sidebar.subheader("Filter Dataset")
 filter_col = st.sidebar.selectbox("Filter Column", options=df.columns)
 if filter_col in df.columns:
@@ -51,7 +49,6 @@ else:
 
 col1, col2 = st.columns(2)
 
-# ===== تعريف ألوان مختلفة لكل عمود target =====
 color_palettes = {
     "Social_Media_Usage": ["#a8dadc","#f1faee","#d3d3d3"],
     "Diet_Quality": ["#457b9d","#adb5bd","#6c757d"],
@@ -64,19 +61,12 @@ with col1:
     st.subheader("Target Column Distribution")
     target_col = st.selectbox("Select Target Column", df_filtered.columns)
     colors = color_palettes.get(target_col, px.colors.qualitative.Plotly)
-    fig = px.histogram(df_filtered, x=target_col, color=target_col,
-                       color_discrete_sequence=colors,
-                       title=f"Distribution of {target_col}")
+    fig = px.histogram(df_filtered, x=target_col, color=target_col, color_discrete_sequence=colors, title=f"Distribution of {target_col}")
     st.plotly_chart(fig, use_container_width=True)
-
-    # ===== Summary Statistics =====
     st.subheader(f"Summary Statistics for {target_col}")
     st.write(df_filtered[target_col].describe())
-
-    # ===== Box Plot =====
     st.subheader(f"Box Plot for {target_col}")
-    fig_box = px.box(df_filtered, y=target_col, color=target_col,
-                     color_discrete_sequence=colors)
+    fig_box = px.box(df_filtered, y=target_col, color=target_col, color_discrete_sequence=colors)
     st.plotly_chart(fig_box, use_container_width=True)
 
 with col2:
@@ -89,20 +79,17 @@ with col2:
     plt.yticks(rotation=0)
     st.pyplot(fig, use_container_width=True)
 
-# ===== Label Encoding =====
 df_filtered = df_filtered.dropna()
 label_cols = df_filtered.select_dtypes(include=['object']).columns
 encoder = LabelEncoder()
 for col in label_cols:
     df_filtered[col] = encoder.fit_transform(df_filtered[col])
 
-# ===== Prepare Data =====
 target = target_col
 X = df_filtered.drop(columns=[target])
 y = df_filtered[target]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# ===== Models =====
 st.header("Model Training and Evaluation")
 models = {
     "Random Forest": RandomForestClassifier(n_estimators=50, random_state=42),
@@ -115,10 +102,7 @@ models = {
     "Decision Tree": DecisionTreeClassifier(random_state=42)
 }
 
-selected_models = st.multiselect(
-    "Select models to train", list(models.keys()), default=["Random Forest", "Logistic Regression"]
-)
-
+selected_models = st.multiselect("Select models to train", list(models.keys()), default=["Random Forest", "Logistic Regression"])
 results = {}
 if st.button("Train Selected Models"):
     for name in selected_models:
@@ -127,39 +111,33 @@ if st.button("Train Selected Models"):
         preds = model.predict(X_test)
         acc = accuracy_score(y_test, preds)
         results[name] = acc
-
     result_df = pd.DataFrame(list(results.items()), columns=["Model", "Accuracy"]).sort_values(by="Accuracy", ascending=False)
     st.subheader("Model Accuracy Comparison")
     st.table(result_df)
-
     best_model_name = max(results, key=results.get)
     st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
 
 if st.checkbox("Show Confusion Matrix for Best Model"):
-        best_model = models[best_model_name]
-        preds = best_model.predict(X_test)
-        cm = confusion_matrix(y_test, preds)
-        fig, ax = plt.subplots()
-        sns.heatmap(cm, annot=True, fmt="d", cmap="Purples", ax=ax)
-        st.pyplot(fig)
+    best_model = models[best_model_name]
+    preds = best_model.predict(X_test)
+    cm = confusion_matrix(y_test, preds)
+    fig, ax = plt.subplots()
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Purples", ax=ax)
+    st.pyplot(fig)
 
-# ===== Numeric Columns Distribution =====
 st.subheader("Numeric Columns Distribution")
 numeric_cols = df_filtered.select_dtypes(include=['int64','float64']).columns
 selected_num_col = st.selectbox("Select Numeric Column for Distribution", numeric_cols)
 fig_hist = px.histogram(df_filtered, x=selected_num_col, nbins=20, title=f"Distribution of {selected_num_col}")
 st.plotly_chart(fig_hist, use_container_width=True)
 
-# ===== Scatter Plot =====
 st.subheader("Scatter Plot of Two Numeric Features")
 num_cols = df_filtered.select_dtypes(include=['float64','int64']).columns.tolist()
 x_col = st.selectbox("X-axis", num_cols, index=0)
 y_col = st.selectbox("Y-axis", num_cols, index=1)
-fig_scatter = px.scatter(df_filtered, x=x_col, y=y_col, color=target_col, 
-                         color_discrete_sequence=colors, title=f"{y_col} vs {x_col}")
+fig_scatter = px.scatter(df_filtered, x=x_col, y=y_col, color=target_col, color_discrete_sequence=colors, title=f"{y_col} vs {x_col}")
 st.plotly_chart(fig_scatter, use_container_width=True)
 
-# ===== Sentiment Analysis =====
 st.header("Sentiment Analysis")
 text_input = st.text_area("Enter text to analyze sentiment:")
 if st.button("Analyze Sentiment"):
