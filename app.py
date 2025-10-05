@@ -138,6 +138,26 @@ y_col = st.selectbox("Y-axis", num_cols, index=1)
 fig_scatter = px.scatter(df_filtered, x=x_col, y=y_col, color=target_col, color_discrete_sequence=colors, title=f"{y_col} vs {x_col}")
 st.plotly_chart(fig_scatter, use_container_width=True)
 
+st.header("Interactive Mini Quiz")
+quiz_score = 0
+q1 = st.radio("How often do you exercise per week?", ["0 times","1-2 times","3-5 times","Everyday"])
+if q1 in ["3-5 times","Everyday"]:
+    quiz_score += 1
+q2 = st.radio("How many hours of sleep do you get per night?", ["<5","5-6","6-8","8+"])
+if q2 in ["6-8","8+"]:
+    quiz_score += 1
+q3 = st.radio("How many servings of fruits/vegetables do you eat daily?", ["0-1","2-3","4+"])
+if q3 == "4+":
+    quiz_score += 1
+if st.button("Submit Quiz"):
+    st.info(f"Your Mini Wellness Score: {quiz_score}/3")
+    if quiz_score == 3:
+        st.success("Excellent! Keep up the healthy habits.")
+    elif quiz_score == 2:
+        st.warning("Good! Try to improve a bit more.")
+    else:
+        st.error("Consider improving your lifestyle habits.")
+
 st.header("Sentiment Analysis")
 text_input = st.text_area("Enter text to analyze sentiment:")
 if st.button("Analyze Sentiment"):
@@ -154,6 +174,7 @@ if st.button("Analyze Sentiment"):
 
 st.markdown("---")
 st.markdown("Lite Version for Free Users")
+
 
 
 
