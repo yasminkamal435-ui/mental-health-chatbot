@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -16,10 +17,13 @@ from sklearn.tree import DecisionTreeClassifier
 from textblob import TextBlob
 import nltk
 import random
+
 nltk.download('punkt')
 nltk.download('stopwords')
+
 st.set_page_config(page_title="Lite AI Mental Health Dashboard", layout="wide")
 st.title("Lite AI Mental Health and Lifestyle Dashboard")
+
 @st.cache_data
 def load_data():
     try:
@@ -28,14 +32,18 @@ def load_data():
     except:
         st.error("CSV file not found. Make sure 'mental_health_lifestyle.csv' is in your folder.")
         return pd.DataFrame()
+
 df = load_data()
 if df.empty:
     st.stop()
+
 st.sidebar.title("Dashboard Control")
 if st.sidebar.checkbox("Show first 5 rows"):
     st.dataframe(df.head(5))
 st.sidebar.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
+
 col1, col2 = st.columns(2)
+
 color_palettes = {
     "Social_Media_Usage": ["#a8dadc","#f1faee","#d3d3d3"],
     "Diet_Quality": ["#457b9d","#adb5bd","#6c757d"],
@@ -43,12 +51,14 @@ color_palettes = {
     "Alcohol_Consumption": ["#6c757d","#f1faee","#495057"],
     "Medication_Usage": ["#a8dadc","#457b9d","#adb5bd"]
 }
+
 with col1:
     st.subheader("Target Column Distribution")
     target_col = st.selectbox("Select Target Column", df.columns)
     colors = color_palettes.get(target_col, px.colors.qualitative.Plotly)
     fig = px.histogram(df, x=target_col, color=target_col, color_discrete_sequence=colors, title=f"Distribution of {target_col}")
     st.plotly_chart(fig, use_container_width=True)
+
 with col2:
     st.subheader("Correlation Heatmap")
     numeric_df = df.select_dtypes(include=['float64', 'int64'])
@@ -58,15 +68,18 @@ with col2:
     plt.xticks(rotation=45, ha="right")
     plt.yticks(rotation=0)
     st.pyplot(fig, use_container_width=True)
+
 df = df.dropna()
 label_cols = df.select_dtypes(include=['object']).columns
 encoder = LabelEncoder()
 for col in label_cols:
     df[col] = encoder.fit_transform(df[col])
+
 target = target_col
 X = df.drop(columns=[target])
 y = df[target]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
 st.header("Model Training and Evaluation")
 models = {
     "Random Forest": RandomForestClassifier(n_estimators=50, random_state=42),
@@ -78,6 +91,7 @@ models = {
     "Naive Bayes": GaussianNB(),
     "Decision Tree": DecisionTreeClassifier(random_state=42)
 }
+
 selected_models = st.multiselect("Select models to train", list(models.keys()), default=["Random Forest", "Logistic Regression"])
 results = {}
 if st.button("Train Selected Models"):
@@ -92,6 +106,7 @@ if st.button("Train Selected Models"):
     st.table(result_df)
     best_model_name = max(results, key=results.get)
     st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
+
 if st.checkbox("Show Confusion Matrix for Best Model"):
     best_model = models[best_model_name]
     preds = best_model.predict(X_test)
@@ -99,6 +114,7 @@ if st.checkbox("Show Confusion Matrix for Best Model"):
     fig, ax = plt.subplots()
     sns.heatmap(cm, annot=True, fmt="d", cmap="Purples", ax=ax)
     st.pyplot(fig, use_container_width=True)
+
 st.header("Sentiment Analysis")
 text_input = st.text_area("Enter text to analyze sentiment:")
 if st.button("Analyze Sentiment"):
@@ -112,18 +128,24 @@ if st.button("Analyze Sentiment"):
             st.warning("Neutral Sentiment (0.00)")
     else:
         st.warning("Please enter valid text.")
-st.header("Interactive Mini Quiz")
+
+st.header("Daily Mini Quiz")
 quiz_score = 0
-q1 = st.radio("How often do you exercise per week?", ["0 times","1-2 times","3-5 times","Everyday"])
-if q1 in ["3-5 times","Everyday"]:
-    quiz_score += 1
-q2 = st.radio("How many hours of sleep do you get per night?", ["<5","5-6","6-8","8+"])
-if q2 in ["6-8","8+"]:
-    quiz_score += 1
-q3 = st.radio("How many servings of fruits/vegetables do you eat daily?", ["0-1","2-3","4+"])
-if q3 == "4+":
-    quiz_score += 1
+questions = {
+    "How often do you exercise per week?": ["0 times","1-2 times","3-5 times","Everyday"],
+    "How many hours of sleep do you get per night?": ["<5","5-6","6-8","8+"],
+    "How many servings of fruits/vegetables do you eat daily?": ["0-1","2-3","4+"]
+}
+answers = {}
+for q, opts in questions.items():
+    answers[q] = st.radio(q, opts)
 if st.button("Submit Quiz"):
+    if answers["How often do you exercise per week?"] in ["3-5 times","Everyday"]:
+        quiz_score += 1
+    if answers["How many hours of sleep do you get per night?"] in ["6-8","8+"]:
+        quiz_score += 1
+    if answers["How many servings of fruits/vegetables do you eat daily?"] == "4+":
+        quiz_score += 1
     st.info(f"Your Mini Wellness Score: {quiz_score}/3")
     if quiz_score == 3:
         st.success("Excellent! Keep up the healthy habits.")
@@ -131,7 +153,8 @@ if st.button("Submit Quiz"):
         st.warning("Good! Try to improve a bit more.")
     else:
         st.error("Consider improving your lifestyle habits.")
-st.header("Daily Wellness Tip")
+
+st.header("Random Wellness Tip")
 tips = [
     "Drink at least 8 glasses of water today.",
     "Take a 10-minute walk to refresh your mind.",
@@ -143,7 +166,8 @@ tips = [
     "Write down 3 things you are grateful for today."
 ]
 st.info(random.choice(tips))
-st.header("Lifestyle Habits Tracker")
+
+st.header("Mini Lifestyle Tracker")
 exercise = st.checkbox("Did you exercise today?")
 sleep = st.checkbox("Did you sleep at least 7 hours?")
 water = st.checkbox("Did you drink 8 glasses of water?")
@@ -157,8 +181,24 @@ if st.button("Submit Daily Habits"):
         st.warning("Good! Try to improve the remaining habits.")
     else:
         st.error("Consider improving your daily lifestyle habits.")
-st.markdown("---")
-st.markdown("Lite Version for Free Users")
+
+st.header("Daily Challenge / Reminder")
+daily_challenges = [
+    "Drink 8 glasses of water today.",
+    "Walk 10 minutes outside.",
+    "Do 5 minutes of stretching.",
+    "Take a 5-minute meditation break."
+]
+challenge = random.choice(daily_challenges)
+if st.button("Mark Challenge Done"):
+    st.success(f"You completed: {challenge}")
+else:
+    st.info(f"Today's Challenge: {challenge}")
+
+st.header("Simple Progress Indicator")
+progress = f"You have completed {habits_score} out of 4 daily habits."
+st.info(progress)
+
 
 
 
