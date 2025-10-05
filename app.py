@@ -58,7 +58,7 @@ with col2:
     fig, ax = plt.subplots(figsize=(7,5))
     sns.set_theme(style="white")
     mask = np.triu(np.ones_like(corr, dtype=bool))
-    cmap = sns.diverging_palette(220, 50, as_cmap=True)  # من الأسود إلى موف فاتح
+    cmap = sns.diverging_palette(250, 15, s=75, l=40, n=9, as_cmap=True)  # أسود مع تدرجات موف فاتح
     sns.heatmap(corr, mask=mask, cmap=cmap, center=0, square=True, linewidths=0.5,
                 annot=True, fmt=".2f", annot_kws={"size":10}, cbar_kws={"shrink":0.8, "label":"Correlation"})
     plt.xticks(rotation=45, ha="right", fontsize=9)
@@ -112,12 +112,13 @@ if st.button("Train Selected Models"):
     best_model_name = max(results, key=results.get)
     st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
 
-if best_model_name and st.checkbox("Show Confusion Matrix for Best Model"):
+if st.checkbox("Show Confusion Matrix for Best Model") and best_model_name:
     best_model = models[best_model_name]
     preds = best_model.predict(X_test)
     cm = confusion_matrix(y_test, preds)
     fig, ax = plt.subplots(figsize=(5,4))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Greys", ax=ax)
+    cmap = sns.diverging_palette(250, 15, s=75, l=40, n=9, as_cmap=True)  # نفس ألوان Heatmap
+    sns.heatmap(cm, annot=True, fmt="d", cmap=cmap, ax=ax)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Actual")
     st.pyplot(fig)
@@ -185,4 +186,5 @@ if st.button("Analyze Sentiment"):
 
 st.markdown("---")
 st.markdown("Developed for AI Mental Health Research Dashboard")
+
 
