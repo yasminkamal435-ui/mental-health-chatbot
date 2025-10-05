@@ -1,6 +1,12 @@
 streamlit
 pandas
-sentence-transformers
-torch
-sentence-transformers
-
+numpy
+matplotlib
+seaborn
+scikit-learn
+xgboost
+tensorflow
+keras
+nltk
+textblob
+plotly
