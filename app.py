@@ -20,8 +20,8 @@ import random
 nltk.download('punkt')
 nltk.download('stopwords')
 
-st.set_page_config(page_title="Lite AI Mental Health Dashboard", layout="wide")
-st.title("Lite AI Mental Health and Lifestyle Dashboard")
+st.set_page_config(page_title="Mental Health & Lifestyle Lite", layout="wide")
+st.title("Mental Health & Lifestyle Lite")
 
 @st.cache_data
 def load_data():
@@ -226,6 +226,7 @@ elif st.session_state.points >= 10:
 
 st.markdown("---")
 st.markdown("Lite Version for Free Users")
+
 
 
 
