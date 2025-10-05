@@ -16,9 +16,6 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from textblob import TextBlob
-import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
 
 st.set_page_config(page_title="AI Mental Health Dashboard", layout="wide")
 st.title("AI Mental Health and Lifestyle Dashboard")
@@ -27,7 +24,7 @@ st.title("AI Mental Health and Lifestyle Dashboard")
 def load_data():
     try:
         df = pd.read_csv("mental_health_lifestyle.csv")
-        df = df.sample(n=min(500, len(df)), random_state=42)  # تصغير البيانات
+        df = df.sample(n=min(500, len(df)), random_state=42)  # تصغير البيانات للنسخة المجانية
         return df
     except:
         st.error("CSV file not found. Make sure 'mental_health_lifestyle.csv' is in your project folder.")
@@ -179,7 +176,6 @@ if st.button("Analyze Sentiment"):
 
 st.markdown("---")
 st.markdown("Developed for AI Mental Health Research Dashboard")
-
 
 
 
