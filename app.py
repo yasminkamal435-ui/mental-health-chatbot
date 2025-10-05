@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -17,12 +18,14 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from textblob import TextBlob
 import nltk
+
 nltk.download('punkt')
 nltk.download('stopwords')
 
 st.set_page_config(page_title="AI Mental Health Dashboard", layout="wide")
 st.title("AI Mental Health and Lifestyle Dashboard")
 
+# --- Load data ---
 @st.cache_data
 def load_data():
     try:
@@ -33,55 +36,69 @@ def load_data():
         return pd.DataFrame()
 
 df = load_data()
+
+# --- Check dataset validity ---
 if df.empty:
-    st.error("Dataset is empty.")
+    st.error("Dataset is empty. Cannot run the app.")
+    st.stop()
+if df.shape[1] == 0:
+    st.error("Dataset has no columns. Cannot run the app.")
     st.stop()
 
 st.subheader("Dataset Overview")
 st.write(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}")
 st.dataframe(df.head(10))
 
-st.subheader("Distribution of Numeric Columns")
+# --- Numeric columns ---
 numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
 if len(numeric_cols) == 0:
-    st.warning("No numeric columns to display.")
+    st.warning("No numeric columns found. Using the first column as target.")
+    target_col = df.columns[0]
 else:
-    for col in numeric_cols:
-        fig = px.histogram(df, x=col, title=f"Distribution of {col}")
-        st.plotly_chart(fig, use_container_width=True)
+    target_col = numeric_cols[0]
 
+# --- Distribution of numeric columns ---
+st.subheader("Distribution of Numeric Columns")
+for col in numeric_cols:
+    fig = px.histogram(df, x=col, title=f"Distribution of {col}")
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- Correlation heatmap ---
 st.subheader("Correlation Heatmap")
 numeric_df = df.select_dtypes(include=['float64', 'int64']).dropna()
-if numeric_df.shape[1] > 0:
+if numeric_df.shape[1] > 1:
     corr = numeric_df.corr()
     fig, ax = plt.subplots(figsize=(7,5))
     sns.set_theme(style="white")
     mask = np.triu(np.ones_like(corr, dtype=bool))
     cmap = sns.diverging_palette(230, 20, as_cmap=True)
     sns.heatmap(corr, mask=mask, cmap=cmap, center=0, square=True,
-                linewidths=0.5, annot=True, fmt=".2f", cbar_kws={"shrink":0.8, "label":"Correlation"})
+                linewidths=0.5, annot=True, fmt=".2f", cbar_kws={"shrink":0.8, "label":"Correlation"}, ax=ax)
     plt.xticks(rotation=45, ha="right", fontsize=9)
     plt.yticks(fontsize=9)
     st.pyplot(fig, use_container_width=True)
 else:
-    st.warning("No numeric columns for correlation heatmap.")
+    st.warning("Not enough numeric columns for correlation heatmap.")
 
+# --- Encode categorical columns ---
 df = df.dropna()
 label_cols = df.select_dtypes(include=['object']).columns
 encoder = LabelEncoder()
 for col in label_cols:
     df[col] = encoder.fit_transform(df[col])
 
-if len(numeric_cols) > 0:
-    target_col = numeric_cols[0]
-else:
-    target_col = df.columns[0]
+# --- Prepare data ---
+if target_col not in df.columns:
+    st.error(f"Target column '{target_col}' not found in DataFrame.")
+    st.stop()
 
 target = target_col
 X = df.drop(columns=[target])
 y = df[target]
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# --- Model Training ---
 st.header("Model Training and Evaluation")
 models = {
     "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
@@ -101,13 +118,13 @@ for name, model in models.items():
     results[name] = accuracy_score(y_test, preds)
 
 result_df = pd.DataFrame(list(results.items()), columns=["Model", "Accuracy"]).sort_values(by="Accuracy", ascending=False)
-st.subheader("Model Accuracy Comparison")
 fig = px.bar(result_df, x="Model", y="Accuracy", color="Accuracy", text_auto=".2f", title="Model Accuracy Comparison")
 st.plotly_chart(fig, use_container_width=True)
 
 best_model_name = max(results, key=results.get)
 st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
 
+# --- Confusion matrix ---
 st.subheader("Confusion Matrix for Best Model")
 best_model = models[best_model_name]
 preds = best_model.predict(X_test)
@@ -116,6 +133,7 @@ fig, ax = plt.subplots()
 sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
 st.pyplot(fig)
 
+# --- Neural Network ---
 st.header("Neural Network Training")
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
@@ -146,6 +164,7 @@ ax[1].legend()
 ax[1].set_title("Loss Over Epochs")
 st.pyplot(fig)
 
+# --- KMeans + PCA ---
 st.header("KMeans + PCA Clustering")
 scaled = StandardScaler().fit_transform(X)
 kmeans = KMeans(n_clusters=3, random_state=42)
@@ -159,6 +178,7 @@ fig = px.scatter(pca_df, x="PC1", y="PC2", color=pca_df["Cluster"].astype(str),
                  title="KMeans Clustering with PCA")
 st.plotly_chart(fig, use_container_width=True)
 
+# --- Sentiment Analysis ---
 st.header("Sentiment Analysis")
 text_input = st.text_area("Enter text to analyze sentiment:")
 if text_input.strip():
@@ -172,8 +192,6 @@ if text_input.strip():
 
 st.markdown("---")
 st.markdown("Developed for AI Mental Health Research Dashboard")
-
-
 
 
 
