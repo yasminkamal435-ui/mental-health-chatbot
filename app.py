@@ -47,7 +47,8 @@ col1, col2 = st.columns(2)
 with col1:
     st.subheader("Target Column Distribution")
     target_col = st.selectbox("Select Target Column", df.columns, index=0)
-    fig = px.histogram(df, x=target_col, color=target_col, title=f"Distribution of {target_col}")
+    fig = px.histogram(df, x=target_col, color=target_col, title=f"Distribution of {target_col}",
+                       color_discrete_sequence=px.colors.qualitative.Set2)
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
@@ -55,8 +56,11 @@ with col2:
     numeric_df = df.select_dtypes(include=['float64', 'int64'])
     corr = numeric_df.corr()
     fig, ax = plt.subplots(figsize=(7,5))
-    sns.heatmap(corr, cmap="Greys", center=0, square=True, linewidths=0.5,
-                annot=True, fmt=".2f", cbar_kws={"shrink":0.8, "label":"Correlation"})
+    sns.set_theme(style="white")
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+    cmap = sns.diverging_palette(220, 50, as_cmap=True)  # من الأسود إلى موف فاتح
+    sns.heatmap(corr, mask=mask, cmap=cmap, center=0, square=True, linewidths=0.5,
+                annot=True, fmt=".2f", annot_kws={"size":10}, cbar_kws={"shrink":0.8, "label":"Correlation"})
     plt.xticks(rotation=45, ha="right", fontsize=9)
     plt.yticks(fontsize=9)
     st.pyplot(fig, use_container_width=True)
@@ -67,9 +71,8 @@ encoder = LabelEncoder()
 for col in label_cols:
     df[col] = encoder.fit_transform(df[col])
 
-target = target_col
-X = df.drop(columns=[target])
-y = df[target]
+X = df.drop(columns=[target_col])
+y = df[target_col]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 st.header("Model Training and Evaluation")
@@ -92,6 +95,7 @@ selected_models = st.multiselect(
 )
 
 results = {}
+best_model_name = None
 if st.button("Train Selected Models"):
     for name in selected_models:
         model = models[name]
@@ -101,14 +105,14 @@ if st.button("Train Selected Models"):
         results[name] = acc
 
     result_df = pd.DataFrame(list(results.items()), columns=["Model", "Accuracy"]).sort_values(by="Accuracy", ascending=False)
-    st.subheader("Model Accuracy Comparison")
-    fig = px.bar(result_df, x="Model", y="Accuracy", color="Accuracy", text_auto=".2f", title="Model Accuracy Comparison")
+    fig = px.bar(result_df, x="Model", y="Accuracy", color="Accuracy", text_auto=".2f",
+                 title="Model Accuracy Comparison", color_continuous_scale=px.colors.sequential.Viridis)
     st.plotly_chart(fig, use_container_width=True)
 
     best_model_name = max(results, key=results.get)
     st.success(f"Best Model: {best_model_name} | Accuracy: {results[best_model_name]:.2f}")
 
-if st.checkbox("Show Confusion Matrix for Best Model"):
+if best_model_name and st.checkbox("Show Confusion Matrix for Best Model"):
     best_model = models[best_model_name]
     preds = best_model.predict(X_test)
     cm = confusion_matrix(y_test, preds)
@@ -140,12 +144,12 @@ if st.checkbox("Train Neural Network"):
     st.success(f"Neural Network Test Accuracy: {test_acc:.2f}")
 
     fig, ax = plt.subplots(1,2, figsize=(10,4))
-    ax[0].plot(history.history['accuracy'], label='Train Accuracy')
-    ax[0].plot(history.history['val_accuracy'], label='Val Accuracy')
+    ax[0].plot(history.history['accuracy'], label='Train Accuracy', marker='o')
+    ax[0].plot(history.history['val_accuracy'], label='Val Accuracy', marker='o')
     ax[0].legend()
     ax[0].set_title("Accuracy Over Epochs")
-    ax[1].plot(history.history['loss'], label='Train Loss')
-    ax[1].plot(history.history['val_loss'], label='Val Loss')
+    ax[1].plot(history.history['loss'], label='Train Loss', marker='o')
+    ax[1].plot(history.history['val_loss'], label='Val Loss', marker='o')
     ax[1].legend()
     ax[1].set_title("Loss Over Epochs")
     st.pyplot(fig)
