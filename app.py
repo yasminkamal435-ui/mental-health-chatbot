@@ -15,6 +15,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from textblob import TextBlob
 import nltk
+import random
 nltk.download('punkt')
 nltk.download('stopwords')
 
@@ -171,6 +172,19 @@ if st.button("Analyze Sentiment"):
             st.warning("Neutral Sentiment (0.00)")
     else:
         st.warning("Please enter valid text.")
+
+st.header("Daily Wellness Tip")
+tips = [
+    "Drink at least 8 glasses of water today.",
+    "Take a 10-minute walk to refresh your mind.",
+    "Practice deep breathing for 5 minutes.",
+    "Include more fruits and vegetables in your meals.",
+    "Limit social media usage to improve focus.",
+    "Take short breaks every hour if working/studying.",
+    "Try to get at least 7 hours of sleep tonight.",
+    "Write down 3 things you are grateful for today."
+]
+st.info(random.choice(tips))
 
 st.markdown("---")
 st.markdown("Lite Version for Free Users")
