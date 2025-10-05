@@ -56,9 +56,8 @@ with col2:
     numeric_df = df.select_dtypes(include=['float64', 'int64'])
     corr = numeric_df.corr()
     fig, ax = plt.subplots(figsize=(7,5))
-    sns.set_theme(style="white")
     mask = np.triu(np.ones_like(corr, dtype=bool))
-    cmap = sns.diverging_palette(250, 15, s=75, l=40, n=9, as_cmap=True)  # أسود مع تدرجات موف فاتح
+    cmap = sns.diverging_palette(250, 15, s=75, l=40, n=9, as_cmap=True)  # أسود + تدرجات موف
     sns.heatmap(corr, mask=mask, cmap=cmap, center=0, square=True, linewidths=0.5,
                 annot=True, fmt=".2f", annot_kws={"size":10}, cbar_kws={"shrink":0.8, "label":"Correlation"})
     plt.xticks(rotation=45, ha="right", fontsize=9)
@@ -117,7 +116,7 @@ if st.checkbox("Show Confusion Matrix for Best Model") and best_model_name:
     preds = best_model.predict(X_test)
     cm = confusion_matrix(y_test, preds)
     fig, ax = plt.subplots(figsize=(5,4))
-    cmap = sns.diverging_palette(250, 15, s=75, l=40, n=9, as_cmap=True)  # نفس ألوان Heatmap
+    cmap = sns.diverging_palette(250, 15, s=75, l=40, n=9, as_cmap=True)
     sns.heatmap(cm, annot=True, fmt="d", cmap=cmap, ax=ax)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Actual")
@@ -186,5 +185,6 @@ if st.button("Analyze Sentiment"):
 
 st.markdown("---")
 st.markdown("Developed for AI Mental Health Research Dashboard")
+
 
 
